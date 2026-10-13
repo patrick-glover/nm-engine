@@ -21,7 +21,7 @@ npm test            # calibration suite (Node 18+)
 npm run calibrate   # regenerate calibration/REPORT.md
 ```
 
-## Versioning and chain of custody
+## Versioning
 
 Releases are git tags (`v0.1.0`, …) with notes in [CHANGELOG.md](CHANGELOG.md).
 `ENGINE_VERSION` in `src/model.js` always equals the tag, so a page can show
@@ -35,17 +35,11 @@ which engine it runs.
 `npm test` and `npm run calibrate`, add a CHANGELOG entry, commit, then tag
 `vX.Y.Z` and push the tag. Never move a published tag.
 
-**Consuming.** Projects never edit their copy of the engine. Each one keeps
-`tools/sync-engine.js` (copied from this repo) and an `engine.lock.json`
-recording the release tag, commit and sha256 of its copy:
+**Using it in a project.** Copy `src/model.js` from a tagged release into the
+project and load it with a `<script>` tag (or `require` it under Node). Don't
+edit the copy; change nm-engine and release instead. `ENGINE_VERSION` tells you
+which release a project has, and the project can display it.
 
-```
-node tools/sync-engine.js sync v0.1.1      # pull a release, write the lock
-node tools/sync-engine.js check            # local copy still matches the lock?
-node tools/sync-engine.js check --remote   # …and the tag still points to that commit?
-```
-
-Current consumers: the emg primer (`patrick-glover/emg`) and local
-morning-report decks.
+Current users: the emg primer (`patrick-glover/emg`) and local morning-report decks.
 
 Educational use only. Reference values are approximate; labs differ.

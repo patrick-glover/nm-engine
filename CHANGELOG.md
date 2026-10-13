@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.2 — 2026-10-13
+
+Model behaviour unchanged. Removed `tools/sync-engine.js` and its lock files:
+projects now copy `src/model.js` from a tagged release and read
+`ENGINE_VERSION` to know which one they have.
+
 ## v0.1.1 — 2026-10-13
 
 Model behaviour is unchanged from v0.1.0. Adds versioning and corrects the
