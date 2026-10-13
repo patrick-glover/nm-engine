@@ -26,17 +26,18 @@ const T=[];
 /* ═══════════ 1 · Normal nerves sit inside reference limits ═══════════ */
 for(const [nk,nv] of Object.entries(NERVES)){
   const n=nv.norm,sn=nv.sensory.nerve||nv.name,id=nv.name.toUpperCase().slice(0,3);
-  const src=['PS','CHEN2016'];
+  const src=['PS'], motorSrc=nk==='median'?['PS','CHEN2016']:src;
   T.push(
     {id:`NORM-${id}-DML`,group:'Normal nerves',claim:`${nv.name} distal motor latency ≤ ${n.dml} ms`,
-      measure:()=>motor(nk).dml,expect:{max:n.dml},fmt:ms,sources:src,status:'calibrated'},
+      measure:()=>motor(nk).dml,expect:{max:n.dml},fmt:ms,sources:motorSrc,status:'calibrated'},
     {id:`NORM-${id}-AMP`,group:'Normal nerves',claim:`${nv.name} CMAP amplitude ≥ ${n.amp} mV`,
-      measure:()=>motor(nk).amp,expect:{min:n.amp},fmt:mv,sources:src,status:'calibrated'},
+      measure:()=>motor(nk).amp,expect:{min:n.amp},fmt:mv,sources:motorSrc,status:'calibrated'},
     {id:`NORM-${id}-CV`,group:'Normal nerves',claim:`${nv.name} motor velocity ≥ ${n.cv} m/s in every segment`,
-      measure:()=>minOf(motor(nk).cv),expect:{min:n.cv},fmt:mps,sources:src,status:'calibrated'},
+      measure:()=>minOf(motor(nk).cv),expect:{min:n.cv},fmt:mps,sources:motorSrc,status:'calibrated'},
     {id:`NORM-${id}-SAMP`,group:'Normal nerves',claim:`${sn} SNAP amplitude ≥ ${n.samp} µV`,
       measure:()=>sensory(nk).amp,expect:{min:n.samp},fmt:uv,sources:src,status:'calibrated'},
     {id:`NORM-${id}-SLAT`,group:'Normal nerves',claim:`${sn} sensory peak latency ≤ ${n.slat} ms at 14 cm`,
+      why:nk==='ulnar'?'Disputed limit: 3.1 ms is the Preston & Shapiro peak-latency value as recalled (unverified). Chen 2016 gives 3.1 ms as the ulnar onset-latency limit and 4.0 ms for peak latency. Confirm against the textbook before changing the model or the target.':undefined,
       measure:()=>sensory(nk).peakLat,expect:{max:n.slat},fmt:ms,sources:src,status:'calibrated'},
     {id:`NORM-${id}-SCV`,group:'Normal nerves',claim:`${sn} sensory velocity ≥ ${n.scv} m/s`,
       measure:()=>sensory(nk).cv,expect:{min:n.scv},fmt:mps,sources:src,status:'calibrated'},
@@ -44,14 +45,18 @@ for(const [nk,nv] of Object.entries(NERVES)){
 }
 
 /* ═══════════ 2 · Physiological dispersion over distance ═══════════ */
+/* AAEM consensus upper limits of normal for change from distal to proximal stimulation */
+const OLNEY={median:{amp:.25,area:.20,dur:.25},ulnar:{amp:.25,area:.20,dur:.25},fibular:{amp:.30,area:.25,dur:.30}};
 for(const [nk,nv] of Object.entries(NERVES)){
-  const id=nv.name.toUpperCase().slice(0,3);
+  const id=nv.name.toUpperCase().slice(0,3),L=OLNEY[nk],name=nv.name.toLowerCase(),prox=()=>motor(nk).vsDistal.slice(1);
   T.push(
-    {id:`DISP-${id}-AMP`,group:'Normal dispersion',claim:`Normal ${nv.name.toLowerCase()} CMAP falls <30% from distal to the most proximal site (no false conduction block)`,
-      why:'Normal nerves lose some amplitude proximally from phase cancellation, but never enough to meet the block threshold.',
-      measure:()=>-minOf(motor(nk).vsDistal.slice(1).map(v=>v.amp)),expect:{max:.30},fmt:drop,sources:['OLNEY1999','EANPNS2021'],status:'calibrated'},
-    {id:`DISP-${id}-DUR`,group:'Normal dispersion',claim:`Normal ${nv.name.toLowerCase()} CMAP duration grows <30% proximally (no false dispersion)`,
-      measure:()=>maxOf(motor(nk).vsDistal.slice(1).map(v=>v.dur)),expect:{max:.30},fmt:pct,sources:['EANPNS2021'],status:'calibrated'},
+    {id:`DISP-${id}-AMP`,group:'Normal dispersion',claim:`Normal ${name} CMAP amplitude falls ≤${L.amp*100}% from distal to the most proximal site`,
+      why:'Normal nerves lose some amplitude proximally from phase cancellation, but stay inside the consensus normal limit.',
+      measure:()=>-minOf(prox().map(v=>v.amp)),expect:{max:L.amp},fmt:drop,sources:['OLNEY1999'],status:'calibrated'},
+    {id:`DISP-${id}-AREA`,group:'Normal dispersion',claim:`Normal ${name} CMAP area falls ≤${L.area*100}% proximally`,
+      measure:()=>-minOf(prox().map(v=>v.area)),expect:{max:L.area},fmt:drop,sources:['OLNEY1999'],status:'calibrated'},
+    {id:`DISP-${id}-DUR`,group:'Normal dispersion',claim:`Normal ${name} CMAP duration grows ≤${L.dur*100}% proximally`,
+      measure:()=>maxOf(prox().map(v=>v.dur)),expect:{max:L.dur},fmt:pct,sources:['OLNEY1999'],status:'calibrated'},
   );
 }
 T.push({id:'DISP-SNAP',group:'Normal dispersion',claim:'Over the same 23 cm, the median SNAP falls at least twice as much as the CMAP',
@@ -64,13 +69,14 @@ const cool=(nk,a=32,b=27)=>{const w=motor(nk,{temp:a}),c=motor(nk,{temp:b});retu
 for(const nk of ['median','ulnar']){
   const nv=NERVES[nk],id=nv.name.toUpperCase().slice(0,3);
   T.push({id:`TEMP-${id}-CV`,group:'Temperature',claim:`${nv.name} velocity falls 1.5–2.5 m/s per °C of cooling (32 → 27 °C)`,
-    measure:()=>{const {w,c,d}=cool(nk);return(w.cv[0]-c.cv[0])/d;},expect:{min:1.5,max:2.5},fmt:v=>v.toFixed(2)+' m/s/°C',sources:['DENYS1991'],status:'calibrated'});
+    measure:()=>{const {w,c,d}=cool(nk);return(w.cv[0]-c.cv[0])/d;},expect:{min:1.5,max:2.5},fmt:v=>v.toFixed(2)+' m/s/°C',sources:['RUTKOVE2001','DENYS1991'],status:'calibrated',
+    why:'The direction is in both sources; the 1.5–2.5 m/s per °C range is a consensus estimate (see RUTKOVE2001 note).'});
 }
 T.push(
   {id:'TEMP-AMP',group:'Temperature',claim:'Cooling increases CMAP amplitude',
-    measure:()=>{const {w,c}=cool('ulnar');return c.amp/w.amp-1;},expect:{min:0},fmt:pct,sources:['DENYS1991'],status:'calibrated'},
+    measure:()=>{const {w,c}=cool('ulnar');return c.amp/w.amp-1;},expect:{min:0},fmt:pct,sources:['DENYS1991','RUTKOVE2001'],status:'calibrated'},
   {id:'TEMP-DUR',group:'Temperature',claim:'Cooling increases CMAP duration',
-    measure:()=>{const {w,c}=cool('ulnar');return c.dur/w.dur-1;},expect:{min:0},fmt:pct,sources:['DENYS1991'],status:'calibrated'},
+    measure:()=>{const {w,c}=cool('ulnar');return c.dur/w.dur-1;},expect:{min:0},fmt:pct,sources:['RUTKOVE2001'],status:'calibrated'},
 );
 
 /* ═══════════ 4 · Axon loss ═══════════ */
@@ -82,6 +88,7 @@ T.push(
     why:'Axon loss alone cannot reach the demyelinating range; this is the reason that threshold exists.',
     measure:()=>minOf(motor('median',{loss:.95,lossMode:'largest'}).cv)/NERVES.median.norm.cv,expect:{min:.70},fmt:ofLimit,sources:['EANPNS2021','PS'],status:'calibrated'},
   {id:'AXON-DML',group:'Axon loss',claim:'…and keeps the distal latency below 150% of the upper limit',
+    why:'EAN/PNS 2021 excludes the median nerve at the wrist from its distal latency criterion (carpal tunnel); here 150% is used only as a magnitude benchmark.',
     measure:()=>motor('median',{loss:.95,lossMode:'largest'}).dml/NERVES.median.norm.dml,expect:{max:1.5},fmt:ofLimit,sources:['EANPNS2021','PS'],status:'calibrated'},
 );
 
@@ -99,14 +106,14 @@ for(const nk of ['median','ulnar']){
   const nv=NERVES[nk],id=nv.name.toUpperCase().slice(0,3);
   T.push(
     {id:`CMT-${id}-NOBLOCK`,group:'Uniform demyelination',claim:`CMT1A preset: ${nv.name.toLowerCase()} CMAP falls <30% at every proximal site (no false block)`,
-      measure:()=>-minOf(motor(nk,PRESET.cmt1a).vsDistal.slice(1).map(v=>v.amp)),expect:{max:.30},fmt:drop,sources:['LEWIS1982','EANPNS2021'],status:'calibrated'},
+      measure:()=>-minOf(motor(nk,PRESET.cmt1a).vsDistal.slice(1).map(v=>v.amp)),expect:{max:.30},fmt:drop,sources:['LEWIS1982','KAKU1993','EANPNS2021'],status:'calibrated'},
     {id:`CMT-${id}-NODISP`,group:'Uniform demyelination',claim:`CMT1A preset: ${nv.name.toLowerCase()} CMAP duration grows <30% (no false dispersion)`,
-      measure:()=>maxOf(motor(nk,PRESET.cmt1a).vsDistal.slice(1).map(v=>v.dur)),expect:{max:.30},fmt:pct,sources:['LEWIS1982','EANPNS2021'],status:'calibrated'},
+      measure:()=>maxOf(motor(nk,PRESET.cmt1a).vsDistal.slice(1).map(v=>v.dur)),expect:{max:.30},fmt:pct,sources:['LEWIS1982','KAKU1993','EANPNS2021'],status:'calibrated'},
   );
 }
 T.push(
   {id:'CMT-DML',group:'Uniform demyelination',claim:'CMT1A preset: median distal latency ≥150% of the upper limit',
-    why:'CMT1 slows the distal segment as much as the rest of the nerve.',
+    why:'CMT1 slows the distal segment as much as the rest of the nerve. EAN/PNS 2021 excludes the median wrist from its latency criterion; 150% is used here only as a magnitude benchmark.',
     gap:'The residual latency (terminal branches, junction, muscle) is fixed per axon and never slows with demyelination, so distal latency barely rises. Fix: give the terminal segment its own demyelination factor.',
     measure:()=>motor('median',PRESET.cmt1a).dml/NERVES.median.norm.dml,expect:{min:1.5},fmt:ofLimit,sources:['KAKU1993','EANPNS2021'],status:'gap'},
   {id:'CMT-TLI',group:'Uniform demyelination',claim:'CMT1A preset: median terminal latency index within 25% of normal (uniform distal slowing)',
@@ -134,18 +141,18 @@ T.push({id:'STIM-DEMY',group:'Stimulation',claim:'A demyelinated nerve needs mor
 /* ═══════════ 8 · Neuromuscular junction (repetitive stimulation at 3 Hz) ═══════════ */
 T.push(
   {id:'RNS-NORMAL',group:'Neuromuscular junction',claim:'Normal junction: decrement <10%',
-    measure:()=>rns('normal').decrement,expect:{max:.10},fmt:pct,sources:['PS'],status:'calibrated'},
+    measure:()=>rns('normal').decrement,expect:{max:.10},fmt:pct,sources:['AANEM2001','PS'],status:'calibrated'},
   {id:'RNS-MG',group:'Neuromuscular junction',claim:'Mild MG: decrement >10%',
-    measure:()=>rns('mgMild').decrement,expect:{min:.10},fmt:pct,sources:['PS'],status:'calibrated'},
+    measure:()=>rns('mgMild').decrement,expect:{min:.10},fmt:pct,sources:['AANEM2001','PS'],status:'calibrated'},
   {id:'RNS-MG-SHAPE',group:'Neuromuscular junction',claim:'Moderate MG: lowest response is the 4th or 5th',
     measure:()=>rns('mgMod').minAt,expect:{min:4,max:5},fmt:v=>'response '+v,sources:['PS'],status:'calibrated'},
-  {id:'RNS-MG-PAF',group:'Neuromuscular junction',claim:'Moderate MG: post-exercise increment stays below 100%',
-    why:'An increment of 100% or more points to a presynaptic disorder instead.',
-    measure:()=>rns('mgMod',{tSinceEx:10}).first/rns('mgMod').first-1,expect:{max:1},fmt:pct,sources:['OH2005'],status:'calibrated'},
+  {id:'RNS-MG-PAF',group:'Neuromuscular junction',claim:'Moderate MG: post-exercise increment stays below 60%',
+    why:'In Oh 2005, no MG patient reached a 60% increment after exercise; 60% or more points to a presynaptic disorder.',
+    measure:()=>rns('mgMod',{tSinceEx:10}).first/rns('mgMod').first-1,expect:{max:.6},fmt:pct,sources:['OH2005'],status:'calibrated'},
   {id:'RNS-MG-PAE',group:'Neuromuscular junction',claim:'Moderate MG: decrement is worse 2–4 minutes after exercise than at rest',
-    measure:()=>rns('mgMod',{tSinceEx:180}).decrement-rns('mgMod').decrement,expect:{min:0.001},fmt:v=>(v>=0?'+':'−')+Math.abs(v*100).toFixed(0)+' points',sources:['PS'],status:'calibrated'},
+    measure:()=>rns('mgMod',{tSinceEx:180}).decrement-rns('mgMod').decrement,expect:{min:0.001},fmt:v=>(v>=0?'+':'−')+Math.abs(v*100).toFixed(0)+' points',sources:['OH2014'],status:'calibrated'},
   {id:'RNS-LEMS-LOW',group:'Neuromuscular junction',claim:`LEMS: baseline CMAP below the normal limit (${NERVES.median.norm.amp} mV)`,
-    measure:()=>rns('lems').first,expect:{max:NERVES.median.norm.amp},fmt:mv,sources:['OH2005','PS'],status:'calibrated'},
+    measure:()=>rns('lems').first,expect:{max:NERVES.median.norm.amp},fmt:mv,sources:['PS'],status:'calibrated'},
   {id:'RNS-LEMS-INC',group:'Neuromuscular junction',claim:'LEMS: increment ≥100% just after 10 s of exercise',
     measure:()=>rns('lems',{tSinceEx:10}).first/rns('lems').first-1,expect:{min:1},fmt:pct,sources:['OH2005'],status:'calibrated'},
 );

@@ -35,8 +35,12 @@ for(const g of groups){
     if(r.t.gap)md+=`- **${r.t.id} (gap):** ${r.t.gap}\n`;}}
   md+='\n';
 }
-md+=`## References\n\nWritten from memory and not yet checked against the sources unless marked verified.\n\n`;
-for(const [k,r] of Object.entries(REFS))md+=`${refNum[k]}. ${r.cite} ${r.verified?'(verified)':'**(unverified)**'}  \n   *Used for:* ${r.used}\n`;
+md+=`## References
+
+Each was checked against PubMed, publisher pages or the AANEM site. *Citation* says whether the reference is real and correctly cited. *Claim* says whether what we use it for was seen in the source: **supported** (in the abstract or text), **partial** (part of it, or only in secondary sources) or **unverified** (not checked against the source, usually a textbook page).
+
+`;
+for(const [k,r] of Object.entries(REFS))md+=`${refNum[k]}. ${r.cite} ${r.id}  \n   *Used for:* ${r.used}  \n   *Citation:* ${r.citation} · *Claim:* **${r.claim}**. ${r.note}\n`;
 
 fs.writeFileSync(path.join(__dirname,'REPORT.md'),md);
 const fail=count('calibrated',false);

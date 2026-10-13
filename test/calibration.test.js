@@ -6,12 +6,25 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {TARGETS,evaluate,describeExpect}=require('../calibration/targets.js');
 const REFS=require('../calibration/references.js');
+const {ENGINE_VERSION}=require('../src/model.js');
+
+test('ENGINE_VERSION in model.js matches package.json',()=>{
+  assert.equal(ENGINE_VERSION,require('../package.json').version);
+});
 
 test('every target cites known references',()=>{
   for(const t of TARGETS){
     assert.ok(t.sources?.length,`${t.id} has no sources`);
     for(const s of t.sources)assert.ok(REFS[s],`${t.id} cites unknown reference ${s}`);
     if(t.status==='gap')assert.ok(t.gap,`${t.id} is a gap but does not say why`);
+  }
+});
+
+test('every reference records how it was checked',()=>{
+  for(const [k,r] of Object.entries(REFS)){
+    assert.ok(['verified','unverified'].includes(r.citation),`${k}: citation must be verified or unverified`);
+    assert.ok(['supported','partial','unverified'].includes(r.claim),`${k}: claim must be supported, partial or unverified`);
+    assert.ok(r.cite&&r.used&&r.note,`${k} needs cite, used and note`);
   }
 });
 

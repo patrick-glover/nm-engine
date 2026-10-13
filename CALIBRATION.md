@@ -137,7 +137,10 @@ they show up in every report.
   (CMT-TYPICAL-NOBLOCK).** At a median velocity of ~24 m/s, the simulated CMAP
   falls 58% from wrist to axilla, which meets the block criterion.
 - **Ulnar sensory peak latency is 0.06 ms over the upper limit (NORM-ULN-SLAT).**
-  This is a calibrated target that currently fails, not a documented gap.
+  This is a calibrated target that currently fails. The 3.1 ms limit is
+  itself in question: Chen 2016 gives 3.1 ms as the ulnar *onset* latency
+  limit and 4.0 ms for peak latency. Check Preston & Shapiro before changing
+  either the model or the target.
 
 Not modelled at all, so nothing tests them yet:
 
@@ -164,6 +167,10 @@ change one, change the other.
 
 ## References
 
-The citations in `calibration/references.js` were written from memory and are
-marked **unverified** until someone checks each one against the source. Do
-that before quoting any of them.
+`calibration/references.js` lists each source with its PMID or DOI, what we
+use it for, and two separate judgements recorded on 2026-10-13: whether the
+**citation** is correct, and whether the **claim** was seen in the source
+(*supported*), only partly or secondhand (*partial*), or not checked
+(*unverified*, mostly textbook pages that aren't online). The report prints
+all of this. Before quoting a number marked *partial* or *unverified*, check
+it in the source.

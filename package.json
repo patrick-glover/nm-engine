@@ -1,6 +1,6 @@
 {
   "name": "nm-engine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Population model of nerve conduction, EMG and neuromuscular transmission for teaching sims.",
   "main": "src/model.js",

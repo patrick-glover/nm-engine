@@ -21,17 +21,31 @@ npm test            # calibration suite (Node 18+)
 npm run calibrate   # regenerate calibration/REPORT.md
 ```
 
-## Versioning
+## Versioning and chain of custody
 
 Releases are git tags (`v0.1.0`, …) with notes in [CHANGELOG.md](CHANGELOG.md).
-Consumers (the emg primer, morning report decks) copy `src/model.js` from a
-tagged release and note which version they use.
+`ENGINE_VERSION` in `src/model.js` always equals the tag, so a page can show
+which engine it runs.
 
-- **Patch:** fixes that move outputs toward calibration targets without changing the API.
+- **Patch:** fixes that move outputs toward calibration targets, docs and references; no API change.
 - **Minor:** new behaviour or parameters; existing calls keep working.
 - **Major:** API changes, or changes that alter outputs a consumer depends on.
 
-Every release regenerates the calibration report, so each version records how
-well it matched the literature.
+**Releasing.** Bump `ENGINE_VERSION` and `package.json` together, run
+`npm test` and `npm run calibrate`, add a CHANGELOG entry, commit, then tag
+`vX.Y.Z` and push the tag. Never move a published tag.
+
+**Consuming.** Projects never edit their copy of the engine. Each one keeps
+`tools/sync-engine.js` (copied from this repo) and an `engine.lock.json`
+recording the release tag, commit and sha256 of its copy:
+
+```
+node tools/sync-engine.js sync v0.1.1      # pull a release, write the lock
+node tools/sync-engine.js check            # local copy still matches the lock?
+node tools/sync-engine.js check --remote   # …and the tag still points to that commit?
+```
+
+Current consumers: the emg primer (`patrick-glover/emg`) and local
+morning-report decks.
 
 Educational use only. Reference values are approximate; labs differ.
