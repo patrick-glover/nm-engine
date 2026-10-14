@@ -3,11 +3,13 @@
 The simulation core behind Summation, the interactive EMG and nerve conduction
 primer, and the neuromuscular teaching sims built on it.
 
-A nerve is a population of individual axons and motor units. Each has its own
-conduction velocity, threshold and unit waveform, and every response is their
-sum, so dispersion, phase cancellation, block and the effects of axon loss come
-out of the model rather than being drawn by hand. The engine also models the
-neuromuscular junction for repetitive stimulation (normal, MG, LEMS).
+The engine simulates nerve conduction studies by summing the individual
+responses of a population of axons and motor units, each with its own
+conduction velocity, threshold and waveform, so temporal dispersion, phase
+cancellation, conduction block and axon loss come out of the simulation rather
+than being hard-coded. It also models neuromuscular junction transmission to
+simulate repetitive nerve stimulation in normal, myasthenia gravis and
+Lambert-Eaton conditions.
 
 - `src/model.js`: the engine. Plain JavaScript, no dependencies. Works as a
   browser `<script>` (global functions) or under Node (`require`).
